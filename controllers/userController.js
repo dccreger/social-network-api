@@ -1,10 +1,10 @@
-const { User, Thought } = require("../models");
+const User = require("../models/Users");
 
 module.exports = {
   // Get all users
   async getUsers(req, res) {
     try {
-      const users = await User.find();
+      const users = await User.find().populate("friends").populate("thoughts");
       res.json(users);
     } catch (err) {
       res.status(500).json(err);
@@ -13,7 +13,9 @@ module.exports = {
   // Get a user
   async getSingleUser(req, res) {
     try {
-      const user = await User.findOne({ _id: req.params.userId });
+      const user = await User.findOne({ _id: req.params.id })
+        .populate("friends")
+        .populate("thoughts");
 
       if (!user) {
         return res.status(404).json({ message: "No user with that ID" });
@@ -37,7 +39,7 @@ module.exports = {
   // Delete a user and user thoughts
   async deleteUser(req, res) {
     try {
-      const user = await User.findOneAndDelete({ _id: req.params.userId });
+      const user = await User.findOneAndDelete({ _id: req.params.id });
 
       if (!user) {
         res.status(404).json({ message: "No user with that ID" });
@@ -53,8 +55,11 @@ module.exports = {
   async updateUser(req, res) {
     try {
       const user = await User.findOneAndUpdate(
-        { _id: req.params.userId },
-        { $set: req.body },
+        { _id: req.params.id },
+        {
+          username: req.body.username,
+          email: req.body.email,
+        },
         { runValidators: true, new: true }
       );
 
@@ -62,39 +67,7 @@ module.exports = {
         res.status(404).json({ message: "No user with this id!" });
       }
 
-      res.json(user);
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  },
-  //Add a friend
-  async addFriend(req, res) {
-    try {
-      const user = await User.findOneAndUpdate(
-        { _id: req.params.userId },
-        { $addToSet: { friends: req.body } },
-        { runValidators: true, new: true }
-      );
-      if (!user) {
-        res.status(404).json({ message: "No user with that ID" });
-      }
-      res.json(user);
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  },
-  //Remove a friend
-  async removeFriend(req, res) {
-    try {
-      const user = await User.findOneAndUpdate(
-        { _id: req.params.userId },
-        { $pull: { friends: { friendId: req.params.friendId } } },
-        { runValidators: true, new: true }
-      );
-      if (!user) {
-        return res.status(404).json({ message: "No user with this id!" });
-      }
-      res.json(user);
+      res.status(200).res.json(user);
     } catch (err) {
       res.status(500).json(err);
     }
